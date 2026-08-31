@@ -12,7 +12,7 @@ recognises them and says so.
 
 ```bash
 npm install
-cp .env.local.example .env.local   # then put a real key in it
+cp .env.example .env.local   # then put a real key in it
 npm run dev
 ```
 

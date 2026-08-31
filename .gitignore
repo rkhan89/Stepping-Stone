@@ -42,3 +42,6 @@ next-env.d.ts
 
 .vercel
 .env*
+
+# ...except the example, which carries no secret and every clone needs.
+!.env.example
