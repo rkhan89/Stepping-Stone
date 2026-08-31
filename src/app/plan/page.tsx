@@ -14,7 +14,7 @@ const ORDINALS = ["one", "two", "three", "four", "five"];
 
 export default function PlanScreen() {
   const router = useRouter();
-  const { run, hydrated, update, reset } = useRun();
+  const { run, hydrated, persisted, update, reset, forgetMe } = useRun();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   /** Ticking opens the report-back prompt rather than jumping straight on. */
@@ -291,8 +291,23 @@ export default function PlanScreen() {
           Start something else
         </Link>
         <div className="mt-2 text-[13.5px] leading-[1.45] text-[#17262b]/45">
-          Nothing&rsquo;s saved yet. Close this tab and the plan goes with it.
+          {persisted
+            ? "Saved to this browser. Come back any time and carry on."
+            : "Nothing’s saved. Close this tab and the plan goes with it."}
         </div>
+        {persisted && (
+          <button
+            type="button"
+            onClick={async () => {
+              if (!confirm("Delete your plan and your CV? This cannot be undone.")) return;
+              await forgetMe();
+              router.push("/");
+            }}
+            className="mt-3 text-[13.5px] text-[#b03a1a] underline decoration-[#b03a1a]/40"
+          >
+            Delete everything you hold on me
+          </button>
+        )}
       </div>
     </Screen>
   );

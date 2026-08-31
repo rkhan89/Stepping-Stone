@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Screen, Wordmark } from "@/components/ui";
 import { UnderlineDouble } from "@/components/marks";
+import { ResumeBanner } from "@/components/resume-banner";
 
 export default function Landing() {
   return (
@@ -24,6 +25,8 @@ export default function Landing() {
         apply to, real places to go, real first steps. Not another list of tips
         you&rsquo;ll never open again.
       </p>
+
+      <ResumeBanner />
 
       <div className="mt-9 flex flex-col gap-4">
         <Link href="/start" className="ss-btn text-[19px]">
