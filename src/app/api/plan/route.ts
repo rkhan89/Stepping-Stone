@@ -1,5 +1,5 @@
 import { generateObject } from "ai";
-import { MODEL, VOICE, missingKeyResponse } from "@/lib/model";
+import { MODEL_MID, VOICE, missingKeyResponse } from "@/lib/model";
 import { outlineSchema } from "@/lib/schemas";
 import { JOB_SEARCH_PLAN_TEMPLATE } from "@/lib/job-search-spec";
 
@@ -27,7 +27,7 @@ export async function POST(req: Request) {
 
   try {
     const { object } = await generateObject({
-      model: MODEL,
+      model: MODEL_MID,
       schema: outlineSchema,
       system: `${VOICE}
 

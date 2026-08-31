@@ -1,10 +1,37 @@
 import { anthropic } from "@ai-sdk/anthropic";
 
 /**
- * One place to change the model. Reads ANTHROPIC_API_KEY from the environment
- * (the provider picks it up itself, never pass it through the client).
+ * Model per job, not one model everywhere. Reads ANTHROPIC_API_KEY from the
+ * environment (the provider picks it up itself, never pass it through).
+ *
+ * Chosen by running the same inputs through all three tiers, not by guessing:
+ *
+ * - Classification is a solved problem for Haiku. All three tiers agreed on
+ *   every edge case, including "learn woodworking so I can sell furniture"
+ *   (business, not hobby) and "want to get into AI" (job search, not learning).
+ *
+ * - The step writer is where cheap models actively hurt. Given a CV saying she
+ *   specified a feature *for* a team of four, Haiku wrote that she had *managed*
+ *   a team of four and offered Senior PM on that basis. That is the exact
+ *   overclaim this product exists to avoid. Sonnet stayed honest but cited
+ *   almost nothing concrete from the CV, which makes the step generic, which is
+ *   the failure the whole per-step architecture was built to prevent.
+ *
+ * Rule of thumb: if the call reads a document or writes something the person
+ * will send to an employer, it goes to DEEP.
  */
-export const MODEL = anthropic("claude-opus-5");
+const TIERS = {
+  /** Sorting and matching against a fixed list. */
+  cheap: "claude-haiku-4-5",
+  /** Rewording and shaping, where nothing is being read closely. */
+  mid: "claude-sonnet-5",
+  /** Reading the CV, writing the CV. The output is the product. */
+  deep: "claude-opus-5",
+} as const;
+
+export const MODEL_CHEAP = anthropic(TIERS.cheap);
+export const MODEL_MID = anthropic(TIERS.mid);
+export const MODEL_DEEP = anthropic(TIERS.deep);
 
 export const VOICE = `You write in Stepping Stone's voice.
 

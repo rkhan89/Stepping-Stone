@@ -1,5 +1,5 @@
 import { generateObject } from "ai";
-import { MODEL, VOICE, missingKeyResponse } from "@/lib/model";
+import { MODEL_CHEAP, VOICE, missingKeyResponse } from "@/lib/model";
 import { classificationSchema } from "@/lib/schemas";
 
 export const maxDuration = 60;
@@ -14,7 +14,7 @@ export async function POST(req: Request) {
 
   try {
     const { object } = await generateObject({
-      model: MODEL,
+      model: MODEL_CHEAP,
       schema: classificationSchema,
       system: `${VOICE}
 

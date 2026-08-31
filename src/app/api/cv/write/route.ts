@@ -1,5 +1,5 @@
 import { generateObject } from "ai";
-import { MODEL, VOICE, CV_CRAFT, missingKeyResponse } from "@/lib/model";
+import { MODEL_DEEP, VOICE, CV_CRAFT, missingKeyResponse } from "@/lib/model";
 import { cvSchema, type Cv } from "@/lib/schemas";
 import { readCvUpload, UploadError, type UploadedCv } from "@/lib/cv-upload";
 
@@ -90,7 +90,7 @@ export async function POST(req: Request) {
 
   try {
     const { object } = await generateObject({
-      model: MODEL,
+      model: MODEL_DEEP,
       schema: cvSchema,
       system: `${VOICE}
 
