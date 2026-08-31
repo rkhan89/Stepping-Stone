@@ -77,10 +77,14 @@ it in the new field's language, and put it near the top. Do not pad, and do not
 claim the translation is more than it is.`;
 
 export function missingKeyResponse() {
+  // Different fix depending on where this is running, and the person seeing it
+  // in production is not necessarily the person who can fix it.
+  const dev = process.env.NODE_ENV !== "production";
   return Response.json(
     {
-      error:
-        "ANTHROPIC_API_KEY is not set. Add it to .env.local and restart the dev server.",
+      error: dev
+        ? "ANTHROPIC_API_KEY is not set. Add it to .env.local and restart the dev server."
+        : "Stepping Stone isn't finished connecting to its brain. Nothing you did. Try again shortly.",
     },
     { status: 500 },
   );
