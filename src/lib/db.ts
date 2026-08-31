@@ -26,8 +26,18 @@ function sslFor(url: string): false | "require" {
   }
 }
 
+/**
+ * DATABASE_URL if you set it by hand. POSTGRES_URL is what the Vercel
+ * Marketplace Supabase and Neon integrations inject, and a missing variable
+ * here fails silently as "not persisted", so accept both rather than let the
+ * provisioning route decide whether saving works.
+ */
+function connectionString() {
+  return process.env.DATABASE_URL || process.env.POSTGRES_URL || null;
+}
+
 export function db() {
-  const url = process.env.DATABASE_URL;
+  const url = connectionString();
   if (!url) return null;
   sql ??= postgres(url, {
     // Serverless: many short-lived instances, so keep each one's pool tiny.
