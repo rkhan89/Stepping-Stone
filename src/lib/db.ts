@@ -86,10 +86,26 @@ function describeBadChars(url: string): string {
   return [...found].join(" ");
 }
 
+/**
+ * Supabase's direct host is IPv6-only and serverless functions are IPv4, so
+ * this pairing fails as a DNS error that says nothing about the real cause.
+ * The pooler is IPv4 and is what serverless should use anyway.
+ */
+function warnIfDirectSupabase(url: string) {
+  if (!/db\.[a-z0-9]+\.supabase\.co/.test(url)) return;
+  console.warn(
+    "DATABASE_URL points at Supabase's direct host, which is IPv6-only and " +
+      "unreachable from serverless functions. Use the Transaction pooler " +
+      "string instead: host aws-0-<region>.pooler.supabase.com on port 6543, " +
+      "and note the username changes from 'postgres' to 'postgres.<project-ref>'.",
+  );
+}
+
 export function db() {
   if (broken) return null;
   const url = connectionString();
   if (!url) return null;
+  warnIfDirectSupabase(url);
 
   const opts = {
     // Serverless: many short-lived instances, so keep each pool tiny.
