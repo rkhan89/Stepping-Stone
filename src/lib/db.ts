@@ -39,31 +39,94 @@ function connectionString() {
 /** Set once a connection string has proved unparseable, so we stop retrying. */
 let broken = false;
 
+/**
+ * Percent-encode the password in a connection string.
+ *
+ * Supabase generates passwords containing characters that are not legal in a
+ * URL, and pasting one in verbatim throws before a connection is ever tried.
+ * Encoding cannot send the credentials somewhere else: the host, port and
+ * database are untouched, so the worst case is the same auth failure you would
+ * have had. Only attempted after the string has already failed to parse.
+ */
+function repairPassword(url: string): string | null {
+  const scheme = url.match(/^([a-z+]+:\/\/)/i)?.[1];
+  if (!scheme) return null;
+
+  const rest = url.slice(scheme.length);
+  // The password may itself contain '@', so the authority ends at the LAST one.
+  const at = rest.lastIndexOf("@");
+  if (at === -1) return null;
+
+  const creds = rest.slice(0, at);
+  const hostAndPath = rest.slice(at + 1);
+
+  const colon = creds.indexOf(":");
+  if (colon === -1) return null;
+
+  const user = creds.slice(0, colon);
+  const password = creds.slice(colon + 1);
+  if (!password) return null;
+
+  // Decode first where it is safe to, so an already-encoded password does not
+  // get double-encoded into something wrong.
+  let raw = password;
+  try {
+    raw = decodeURIComponent(password);
+  } catch {
+    // Not valid encoding, so treat it as literal text. This is the % case.
+  }
+
+  return `${scheme}${user}:${encodeURIComponent(raw)}@${hostAndPath}`;
+}
+
+/** Names the offending characters without ever logging the password. */
+function describeBadChars(url: string): string {
+  const found = new Set<string>();
+  for (const ch of url) if ("%@#?&/:+ ".includes(ch)) found.add(ch);
+  return [...found].join(" ");
+}
+
 export function db() {
   if (broken) return null;
   const url = connectionString();
   if (!url) return null;
 
+  const opts = {
+    // Serverless: many short-lived instances, so keep each pool tiny.
+    max: 3,
+    idle_timeout: 20,
+    connect_timeout: 10,
+    // pgbouncer in transaction mode cannot do prepared statements.
+    prepare: false,
+    ssl: sslFor(url),
+  } as const;
+
   if (!sql) {
     try {
-      sql = postgres(url, {
-        // Serverless: many short-lived instances, so keep each pool tiny.
-        max: 3,
-        idle_timeout: 20,
-        connect_timeout: 10,
-        // pgbouncer in transaction mode cannot do prepared statements.
-        prepare: false,
-        ssl: sslFor(url),
-      });
-    } catch (err) {
+      sql = postgres(url, opts);
+    } catch {
+      // Almost always an unescaped character in the password. Try fixing that
+      // before giving up, because the alternative is silently saving nothing.
+      const repaired = repairPassword(url);
+      if (repaired) {
+        try {
+          sql = postgres(repaired, opts);
+          console.warn(
+            "DATABASE_URL had an unescaped password and was encoded automatically. " +
+              `Percent-encode these characters in the stored value: ${describeBadChars(url)}`,
+          );
+          return sql;
+        } catch {
+          // Fall through to the hard failure below.
+        }
+      }
       // A bad connection string should cost people their saved plan, not the
-      // whole app. Most often this is an unescaped character in the password.
+      // whole app.
       broken = true;
       console.error(
-        "DATABASE_URL could not be parsed, so nothing will be saved. If the " +
-          "password contains any of @ # % ? & / : + or a space, percent-encode " +
-          "it (@ becomes %40, # becomes %23, % becomes %25).",
-        err,
+        "DATABASE_URL could not be parsed even after escaping the password, so " +
+          "nothing will be saved. Check the host and port are intact and that " +
+          "[YOUR-PASSWORD] was actually replaced.",
       );
       return null;
     }
