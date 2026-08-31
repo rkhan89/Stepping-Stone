@@ -36,18 +36,38 @@ function connectionString() {
   return process.env.DATABASE_URL || process.env.POSTGRES_URL || null;
 }
 
+/** Set once a connection string has proved unparseable, so we stop retrying. */
+let broken = false;
+
 export function db() {
+  if (broken) return null;
   const url = connectionString();
   if (!url) return null;
-  sql ??= postgres(url, {
-    // Serverless: many short-lived instances, so keep each one's pool tiny.
-    max: 3,
-    idle_timeout: 20,
-    connect_timeout: 10,
-    // pgbouncer in transaction mode cannot do prepared statements.
-    prepare: false,
-    ssl: sslFor(url),
-  });
+
+  if (!sql) {
+    try {
+      sql = postgres(url, {
+        // Serverless: many short-lived instances, so keep each pool tiny.
+        max: 3,
+        idle_timeout: 20,
+        connect_timeout: 10,
+        // pgbouncer in transaction mode cannot do prepared statements.
+        prepare: false,
+        ssl: sslFor(url),
+      });
+    } catch (err) {
+      // A bad connection string should cost people their saved plan, not the
+      // whole app. Most often this is an unescaped character in the password.
+      broken = true;
+      console.error(
+        "DATABASE_URL could not be parsed, so nothing will be saved. If the " +
+          "password contains any of @ # % ? & / : + or a space, percent-encode " +
+          "it (@ becomes %40, # becomes %23, % becomes %25).",
+        err,
+      );
+      return null;
+    }
+  }
   return sql;
 }
 
