@@ -56,8 +56,15 @@ than guessing, and the search step searches for what the targeting step chose.
 Write each 'intent' so the later writer knows exactly what it is handed and what
 it must hand on.
 
-helper: set 'cv_builder' on the step that produces or fixes the CV, because the
-app can do that work with them. 'none' everywhere else, for now.
+helper: set 'cv_builder' on the step that produces or fixes the CV, and
+'application_tracker' on the step where they start applying and need to keep
+track of it. 'none' everywhere else.
+
+Stepping Stone does not find live postings and must never pretend to. The
+searching step tells them which titles to search and which boards actually serve
+their market, and then they go and look themselves. The applying step is about
+logging what they sent and being chased to follow it up, which is where the app
+earns its keep: people do not fail to apply, they fail to follow up.
 
 honestNote: only if there is something real they need to hear before starting -
 a hard target, a gap that will get asked about, a timeline that will not happen.

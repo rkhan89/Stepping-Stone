@@ -1,5 +1,6 @@
 import postgres from "postgres";
 import type { Run } from "./session";
+import type { Application } from "./applications";
 
 /**
  * Any Postgres. DATABASE_URL points at Supabase today; nothing here is
@@ -222,4 +223,117 @@ export async function deleteRuns(ownerId: string): Promise<number> {
     delete from runs where owner_id = ${ownerId} returning id
   `;
   return rows.length;
+}
+
+/* ---------------------------------------------------------------- */
+/* Applications                                                      */
+/* ---------------------------------------------------------------- */
+
+type AppRow = {
+  id: string;
+  company: string;
+  role_title: string;
+  url: string | null;
+  source: string | null;
+  applied_on: Date;
+  status: string;
+  follow_up_due: Date | null;
+  followed_up_on: Date | null;
+  outcome_note: string | null;
+};
+
+const asDate = (d: Date | null) => (d ? d.toISOString().slice(0, 10) : null);
+
+function toApplication(r: AppRow): Application {
+  return {
+    id: r.id,
+    company: r.company,
+    roleTitle: r.role_title,
+    url: r.url,
+    source: r.source,
+    appliedOn: asDate(r.applied_on) as string,
+    status: r.status as Application["status"],
+    followUpDue: asDate(r.follow_up_due),
+    followedUpOn: asDate(r.followed_up_on),
+    outcomeNote: r.outcome_note,
+  };
+}
+
+/**
+ * Every application query joins through runs and filters on owner_id, so a
+ * guessed application id is worthless without the matching cookie.
+ */
+export async function listApplications(
+  ownerId: string,
+  runId: string,
+): Promise<Application[]> {
+  const s = db();
+  if (!s) return [];
+  const rows = await s<AppRow[]>`
+    select a.id, a.company, a.role_title, a.url, a.source, a.applied_on,
+           a.status, a.follow_up_due, a.followed_up_on, a.outcome_note
+      from applications a
+      join runs r on r.id = a.run_id
+     where a.run_id = ${runId} and r.owner_id = ${ownerId}
+     order by a.applied_on desc, a.created_at desc
+  `;
+  return rows.map(toApplication);
+}
+
+export async function createApplication(
+  ownerId: string,
+  runId: string,
+  input: {
+    company: string;
+    roleTitle: string;
+    url?: string | null;
+    source?: string | null;
+    appliedOn: string;
+    followUpDue: string;
+  },
+): Promise<Application | null> {
+  const s = db();
+  if (!s) return null;
+  const rows = await s<AppRow[]>`
+    insert into applications (run_id, company, role_title, url, source, applied_on, follow_up_due)
+    select ${runId}, ${input.company}, ${input.roleTitle}, ${input.url ?? null},
+           ${input.source ?? null}, ${input.appliedOn}::date, ${input.followUpDue}::date
+     where exists (select 1 from runs where id = ${runId} and owner_id = ${ownerId})
+    returning id, company, role_title, url, source, applied_on, status,
+              follow_up_due, followed_up_on, outcome_note
+  `;
+  return rows[0] ? toApplication(rows[0]) : null;
+}
+
+export async function updateApplication(
+  ownerId: string,
+  id: string,
+  patch: { status?: string; outcomeNote?: string | null; followedUpOn?: string | null },
+): Promise<Application | null> {
+  const s = db();
+  if (!s) return null;
+  const rows = await s<AppRow[]>`
+    update applications a
+       set status = coalesce(${patch.status ?? null}, a.status),
+           outcome_note = coalesce(${patch.outcomeNote ?? null}, a.outcome_note),
+           followed_up_on = coalesce(${patch.followedUpOn ?? null}::date, a.followed_up_on),
+           updated_at = now()
+      from runs r
+     where a.id = ${id} and r.id = a.run_id and r.owner_id = ${ownerId}
+    returning a.id, a.company, a.role_title, a.url, a.source, a.applied_on,
+              a.status, a.follow_up_due, a.followed_up_on, a.outcome_note
+  `;
+  return rows[0] ? toApplication(rows[0]) : null;
+}
+
+export async function deleteApplication(ownerId: string, id: string): Promise<boolean> {
+  const s = db();
+  if (!s) return false;
+  const rows = await s<{ id: string }[]>`
+    delete from applications a
+     using runs r
+     where a.id = ${id} and r.id = a.run_id and r.owner_id = ${ownerId}
+    returning a.id
+  `;
+  return rows.length > 0;
 }

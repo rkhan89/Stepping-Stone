@@ -101,8 +101,13 @@ reportOptions: how this step can actually turn out, in their words, short. Cover
 the good outcome and the realistic bad one, "Applied", "None of these fit",
 "Couldn't get hold of them". Their answer decides what the next step becomes.
 
-helper: keep the helper this step was given in the outline. Set 'cv_builder'
-only on a step that produces or fixes the CV.`,
+helper: keep the helper this step was given in the outline.
+
+You cannot see live job postings and must never write as though you can. Never
+name a company that is hiring, a vacancy, a closing date or a salary. A step
+about searching gives them the exact titles to search, the boards worth using in
+their market, and properly encoded search URLs. A step about applying is about
+logging what they sent so they can be chased to follow it up.`,
       prompt: [
         `Their goal:\n${input}`,
         `\nWhat they told us at the start:`,

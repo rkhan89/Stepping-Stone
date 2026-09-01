@@ -21,9 +21,9 @@ export default function Landing() {
       </h1>
 
       <p className="mt-9 text-[18px] leading-[1.52] text-[#17262b]/80">
-        Tell Stepping Stone what you want to start. We do the digging: real jobs to
-        apply to, real places to go, real first steps. Not another list of tips
-        you&rsquo;ll never open again.
+        Tell Stepping Stone what you want to start. We work out what you can
+        actually go for, where to look, and the one thing to do today. Then we make
+        sure you don&rsquo;t drop it.
       </p>
 
       <ResumeBanner />

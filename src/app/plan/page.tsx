@@ -212,6 +212,20 @@ export default function PlanScreen() {
             <CvBuilder onDone={() => setReporting(true)} />
           )}
 
+          {live.helper === "application_tracker" && (
+            <div className="mt-4 border-t border-[#17262b]/[.14] pt-4">
+              <div className="t-hand text-[18px] leading-[1.3] text-[#1f4fd8]">
+                Apply wherever you normally do. Log it here and we&rsquo;ll chase you.
+              </div>
+              <Link href="/applications" className="ss-btn mt-3 text-[16.5px]">
+                Log what you applied for
+              </Link>
+              <div className="mt-2 text-center text-[13.5px] leading-[1.45] text-[#17262b]/55">
+                People don&rsquo;t fail to apply. They fail to follow up.
+              </div>
+            </div>
+          )}
+
           {error && <ErrorNote message={error} />}
 
           {!reporting ? (

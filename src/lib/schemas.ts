@@ -60,7 +60,7 @@ export type GeneratedQuestions = z.infer<typeof questionsSchema>;
  * Helpers a step can carry. A step that asks someone to *make* something must
  * offer to help make it, otherwise the plan stalls and nothing feeds forward.
  */
-export const helperKinds = ["cv_builder", "none"] as const;
+export const helperKinds = ["cv_builder", "application_tracker", "none"] as const;
 
 /**
  * LLM call 3, the arc only. Titles and intent, no prose. The prose for each
